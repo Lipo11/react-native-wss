@@ -1,6 +1,6 @@
 {
   "name": "react-native-wss",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "React native WebSocket Secure",
   "main": "README.md",
   "scripts": {
