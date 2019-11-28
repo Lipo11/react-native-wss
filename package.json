@@ -1,0 +1,30 @@
+{
+  "name": "react-native-wss",
+  "version": "1.0.0",
+  "description": "React native WebSocket Secure",
+  "main": "README.md",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lipo11/react-native-wss.git"
+  },
+  "keywords": [
+    "react",
+    "native",
+    "wss",
+    "websocket",
+    "websockets",
+    "secure",
+    "ca",
+    "pfx",
+    "passphrase"
+  ],
+  "author": "Alex Polomcak",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Lipo11/react-native-wss/issues"
+  },
+  "homepage": "https://github.com/Lipo11/react-native-wss#readme"
+}
