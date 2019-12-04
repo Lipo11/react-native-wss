@@ -12,6 +12,7 @@ npm i project/ --save-dev yauzl
 ```
 
 ### Compile android native code with wss support
+## This step can be skipped ( I compile the newest react native version with WSS into patches/ )
 ```sh
 #Clone repository from github.
 git clone https://github.com/facebook/react-native.git
@@ -27,7 +28,9 @@ git checkout 0.61-stable
 cp scripts/ReactAndroid/ nativeReact/ReactAndroid/
 
 # Let's build android native project( be sure NDK is installed and path is defined into bash_brofile )
+# When you can see the following error "ndk-build binary cannot be found" you can just open the project in the Android Studio and set the NDK path in File > Project Structure > SDK Location
 # Run this into react native repository folder
+npm i
 ./gradlew clean
 ./gradlew assembleRelease
 
@@ -39,11 +42,11 @@ mv ReactAndroid/build/outputs/aar/ReactAndroid-release.aar ReactAndroid/build/ou
 
 # and copy it into your project root with path
 # patches/android/com/facebook/react/react-native/0.61.5/react-native-0.61.5.aar
-mkdir -R project/patches/android/com/facebook/react/react-native/0.61.5/
+mkdir -p project/patches/android/com/facebook/react/react-native/0.61.5/
 cp nativeReact/ReactAndroid/build/outputs/aar/react-native-0.61.5.aar project/patches/android/com/facebook/react/react-native/0.61.5/
 
 # The last step is zip the folder patches/android/ with name of your react native project version ( for example 0.61.5 )
-zip -r 0.61.5.zip project/android/
+zip -r -X 0.61.5.zip project/android
 ```
 
 ### Run the postinstall
@@ -60,7 +63,7 @@ this._ws = new WebSocket( 'wss://192.168.0.1', [],
 {
 	headers: { Authorization: 'Bearer 123' },
 	ca: '-----BEGIN CERTIFICATE-----\n\n-----END CERTIFICATE-----\n',
-	pfx: '',
-	passphrase: ''
+	pfx: 'base64==',
+	passphrase: 'mustbedefinedforpfx'
 });
 ```

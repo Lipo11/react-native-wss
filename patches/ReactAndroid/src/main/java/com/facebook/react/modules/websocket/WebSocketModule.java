@@ -139,7 +139,7 @@ public final class WebSocketModule extends ReactContextBaseJavaModule {
             InputStream is = new ByteArrayInputStream( data );
 
             keyKeyStore = KeyStore.getInstance("PKCS12");
-            keyKeyStore.load(is, passphrase.toCharArray());
+            keyKeyStore.load(is, passphrase != null ? passphrase.toCharArray() : null);
 
         } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
             throw new RuntimeException(e);
@@ -148,33 +148,49 @@ public final class WebSocketModule extends ReactContextBaseJavaModule {
         return keyKeyStore;
     }
 
-    private OkHttpClient getClient( String ca )
+    private OkHttpClient getClient( String ca, String pfx, String passphrase )
     {
         try
         {
             if( DEBUG ) Log.e("ALEX", "TMF default alg: " + TrustManagerFactory.getDefaultAlgorithm() );
-            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
-            trustManagerFactory.init( getTrusKeystore(ca) );
+            if( DEBUG ) Log.e("ALEX", "KMF default alg: " + KeyManagerFactory.getDefaultAlgorithm() );
+
+            TrustManagerFactory trustManagerFactory = null;
+            KeyManagerFactory keyManagerFactory = null;
+
+            if( ca != null )
+            {
+              trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+              trustManagerFactory.init(getTrusKeystore(ca));
+            }
+
+            if( pfx != null )
+            {
+              keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+              keyManagerFactory.init(getKeyKeystore(pfx, passphrase), passphrase != null ? passphrase.toCharArray() : null);
+            }
 
             SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
-            sslContext.init( null, trustManagerFactory.getTrustManagers(), null);
+            sslContext.init( keyManagerFactory != null ? keyManagerFactory.getKeyManagers() : null, trustManagerFactory != null ? trustManagerFactory.getTrustManagers() : null, null);
 
-            X509TrustManager trustManager = (X509TrustManager) trustManagerFactory.getTrustManagers()[0];
+            X509TrustManager trustManager = trustManagerFactory != null ? (X509TrustManager) trustManagerFactory.getTrustManagers()[0] : null;
 			
-			if( DEBUG )
-			{
-				X509Certificate[] acceptedIssuers = trustManager.getAcceptedIssuers();
-				for (X509Certificate acceptedIssuer : acceptedIssuers)
-				{
-					Log.e("ALEX", "installed cert details subject: " + acceptedIssuer.getSubjectX500Principal() + " issuer: " + acceptedIssuer.getIssuerX500Principal());
-				  }
-			}
+            if( DEBUG )
+            {
+              X509Certificate[] acceptedIssuers = trustManager.getAcceptedIssuers();
+              for (X509Certificate acceptedIssuer : acceptedIssuers)
+              {
+                Log.e("ALEX", "installed cert details subject: " + acceptedIssuer.getSubjectX500Principal() + " issuer: " + acceptedIssuer.getIssuerX500Principal());
+                }
+            }
 
             HostnameVerifier hostnameVerifier = new HostnameVerifier() {
                 @Override
-                public boolean verify(String hostname, SSLSession session) {
-					if( DEBUG ) Log.e("ALEX", "Verifying host: " + hostname );
-                    return true;
+                public boolean verify(String hostname, SSLSession session)
+                {
+                  if( DEBUG ) Log.e("ALEX", "Verifying host: " + hostname );
+
+                  return true;
                 }
             };
 
@@ -186,7 +202,7 @@ public final class WebSocketModule extends ReactContextBaseJavaModule {
                     .hostnameVerifier(hostnameVerifier)
                     .build();
 
-        } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
+        } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException | UnrecoverableKeyException e) {
             throw new RuntimeException(e);
         }
     }
@@ -214,8 +230,11 @@ public final class WebSocketModule extends ReactContextBaseJavaModule {
 
       OkHttpClient client = null;
 
-      if( options == null || !options.hasKey("ca") || options.getString("ca").isEmpty() ) {
-
+      if( options == null ||
+          ( !options.hasKey("ca") && !options.hasKey("pfx") ) ||
+          ( options.getString("ca").isEmpty() && options.getString("pfx").isEmpty() )
+      )
+      {
           if(DEBUG) {
               Log.e("ALEX", "standard socket:  " + url);
           }
@@ -226,17 +245,23 @@ public final class WebSocketModule extends ReactContextBaseJavaModule {
                   .readTimeout(0, TimeUnit.MINUTES) // Disable timeouts for read
                   .build();
       }
-      else {
+      else
+      {
+          String ca = options.hasKey("ca") ? options.getString("ca") : null;
+          String pfx = options.hasKey("pfx") ? options.getString("pfx") : null;
+          String passphrase = options.hasKey("passphrase") ? options.getString("passphrase") : null;
 
-          if(DEBUG) {
-
+          if(DEBUG)
+          {
               listAvailableSSLProtocols();
 
               Log.e("ALEX", "url: " + url);
-              Log.e("ALEX", "ca: " + options.getString("ca"));
+              Log.e("ALEX", "ca: " + ( ca != null ? ca : "" ));
+              Log.e("ALEX", "pfx: " + ( pfx != null ? pfx : "" ));
+              Log.e("ALEX", "passphrase: " + ( passphrase != null ? passphrase : "" ));
           }
 
-          client = getClient( options.getString("ca") );
+          client = getClient( ca, pfx, passphrase );
       }
       //endregion
 
