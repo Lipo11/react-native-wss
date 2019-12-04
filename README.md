@@ -1,5 +1,5 @@
 # React native WebSocket Secure
-Every project what i created was problem with securing websockets. So I decide to share my codes with everyone, and i hope this will be merged into react native one day.
+Every project what i created has problem with securing websockets. So I decide to share my codes with everyone, and i hope this will be merged into react native one day.
 
 ### Installing
 Copy scripts/postinstall.js and patches/node_modules.zip into your project root
