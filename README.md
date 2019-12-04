@@ -4,15 +4,21 @@ Every project what i created was problem with securing websockets. So I decide t
 ### Installing
 Copy scripts/postinstall.js and patches/node_modules.zip into your project root
 ```sh
-cp -r scripts/ project/scripts/ patches/ project/patches/
+cp -r ./{scripts,patches} project/
 ```
 Install yauzl library to devDependencies
 ```sh
 npm i project/ --save-dev yauzl
 ```
+Add postinstall into project package.json scripts object
+```js
+"scripts": {
+	"postinstall": "node scripts/postinstall.js"
+}
+```
 
 ### Compile android native code with wss support
-## This step can be skipped ( I compile the newest react native version with WSS into patches/ )
+#### This step can be skipped ( I compile the newest react native version with WSS into patches/ )
 ```sh
 #Clone repository from github.
 git clone https://github.com/facebook/react-native.git
