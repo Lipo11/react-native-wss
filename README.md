@@ -46,7 +46,7 @@ mkdir -p project/patches/android/com/facebook/react/react-native/0.61.5/
 cp nativeReact/ReactAndroid/build/outputs/aar/react-native-0.61.5.aar project/patches/android/com/facebook/react/react-native/0.61.5/
 
 # The last step is zip the folder patches/android/ with name of your react native project version ( for example 0.61.5 )
-zip -r -X 0.61.5.zip project/android
+zip -r -X 0.61.5.zip project/patches/android
 ```
 
 ### Run the postinstall
