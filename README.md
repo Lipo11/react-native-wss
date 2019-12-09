@@ -1,7 +1,14 @@
 # React native WebSocket Secure
-Every project what i created has problem with securing websockets. So I decide to share my codes with everyone, and i hope this will be merged into react native one day.
+Every project what i created has problem with securing websockets.
+So, I decide to share my codes with everyone, and i hope this will be merged into react native one day.
+This library allows you to set wss address in WebSocket with ca (plain cert), pfx (base64) and passphrase.
 
 ### Installing
+Download the react-native-wss repository & go to the folder
+```sh
+git clone https://github.com/Lipo11/react-native-wss.git
+cd react-native-wss
+```
 Copy scripts/postinstall.js and patches/node_modules.zip into your project root
 ```sh
 cp -r ./{scripts,patches} project/
@@ -13,7 +20,7 @@ npm i project/ --save-dev yauzl
 Add postinstall into project package.json scripts object
 ```js
 "scripts": {
-	"postinstall": "node scripts/postinstall.js"
+  "postinstall": "node scripts/postinstall.js"
 }
 ```
 
@@ -67,9 +74,9 @@ Now, you can use wss address with certificates. ( No need to import any other li
 ```js
 this._ws = new WebSocket( 'wss://192.168.0.1', [],
 {
-	headers: { Authorization: 'Bearer 123' },
-	ca: '-----BEGIN CERTIFICATE-----\n\n-----END CERTIFICATE-----\n',
-	pfx: 'base64==',
-	passphrase: 'mustbedefinedforpfx'
+  headers: { Authorization: 'Bearer 123' },
+  ca: '-----BEGIN CERTIFICATE-----\n\n-----END CERTIFICATE-----\n',
+  pfx: 'base64==',
+  passphrase: 'mustbedefinedforpfx'
 });
 ```
