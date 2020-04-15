@@ -67,8 +67,8 @@ const patchReactNative = async ( version ) =>
 	{
 		return new Promise( async ( resolve ) =>
 		{
-			await unzipFile( './patches/node_modules.zip', './node_modules/' );
-			await unzipFile( './patches/' + patchFile, './node_modules/react-native/' );
+			await unzipFile( './node_modules/react-native-wss/patches/node_modules.zip', './node_modules/' );
+			await unzipFile( './node_modules/react-native-wss/patches/' + patchFile, './node_modules/react-native/' );
 
 			resolve();
 		});
@@ -90,7 +90,7 @@ const patchReactNative = async ( version ) =>
 };
 
 ( async () => {
-	const configuration = require( '../package.json' );
+	const configuration = require( '../../../package.json' );
 
 	await patchReactNative( configuration.dependencies[ 'react-native' ] );
 })();
