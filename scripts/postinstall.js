@@ -12,7 +12,7 @@ const patchReactNative = async ( version ) =>
 		return new Promise( resolve =>
 		{
 			let patch = null;
-			fs.readdirSync( './patches' ).forEach( file =>
+			fs.readdirSync( './node_modules/react-native-wss/patches' ).forEach( file =>
 			{
 				if( file === version + '.zip' ){ patch = file; }
 			});
