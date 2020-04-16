@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
@@ -8,16 +8,10 @@
 package com.facebook.react.modules.websocket;
 
 import androidx.annotation.Nullable;
-import android.util.Base64;
-import android.util.Log;
-
 import com.facebook.common.logging.FLog;
 import com.facebook.fbreact.specs.NativeWebSocketModuleSpec;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactApplicationContext;
-import com.facebook.react.bridge.ReactContext;
-import com.facebook.react.bridge.ReactContextBaseJavaModule;
-import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.ReadableMapKeySetIterator;
@@ -27,12 +21,26 @@ import com.facebook.react.common.ReactConstants;
 import com.facebook.react.module.annotations.ReactModule;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.modules.network.ForwardingCookieHandler;
-
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
+import okio.ByteString;
+
+//CUSTOM
+import android.util.Base64;
+import android.util.Log;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -44,11 +52,6 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -56,13 +59,6 @@ import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
-
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.WebSocket;
-import okhttp3.WebSocketListener;
-import okio.ByteString;
 
 @ReactModule(name = WebSocketModule.NAME, hasConstants = false)
 public final class WebSocketModule extends NativeWebSocketModuleSpec {
@@ -109,123 +105,123 @@ public final class WebSocketModule extends NativeWebSocketModuleSpec {
     }
   }
 
-    public static final Boolean DEBUG = false;
+  public static final Boolean DEBUG = false;
 
-    private KeyStore getTrusKeystore(String ca )
+  private KeyStore getTrusKeystore(String ca )
+  {
+    KeyStore trusKeyStore = null;
+
+    try
     {
-        KeyStore trusKeyStore = null;
+      CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
 
-        try
+      trusKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+      trusKeyStore.load(null, null);
+
+      // CA
+      InputStream is = new ByteArrayInputStream( ca.getBytes( Charset.forName("UTF-8") ) );
+      Certificate cert = certificateFactory.generateCertificate(is);
+      trusKeyStore.setCertificateEntry("alex-ca", cert);
+
+    } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
+      throw new RuntimeException(e);
+    }
+
+    return trusKeyStore;
+  }
+
+  private KeyStore getKeyKeystore( String pfx, String passphrase )
+  {
+    KeyStore keyKeyStore = null;
+
+    try
+    {
+      byte[] data = Base64.decode( pfx, Base64.DEFAULT );
+
+      InputStream is = new ByteArrayInputStream( data );
+
+      keyKeyStore = KeyStore.getInstance("PKCS12");
+      keyKeyStore.load(is, passphrase != null ? passphrase.toCharArray() : null);
+
+    } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
+      throw new RuntimeException(e);
+    }
+
+    return keyKeyStore;
+  }
+
+  private OkHttpClient getClient( String ca, String pfx, String passphrase )
+  {
+    try
+    {
+      if( DEBUG ) Log.e("ALEX", "TMF default alg: " + TrustManagerFactory.getDefaultAlgorithm() );
+      if( DEBUG ) Log.e("ALEX", "KMF default alg: " + KeyManagerFactory.getDefaultAlgorithm() );
+
+      TrustManagerFactory trustManagerFactory = null;
+      KeyManagerFactory keyManagerFactory = null;
+
+      if( ca != null )
+      {
+        trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        trustManagerFactory.init(getTrusKeystore(ca));
+      }
+
+      if( pfx != null )
+      {
+        keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        keyManagerFactory.init(getKeyKeystore(pfx, passphrase), passphrase != null ? passphrase.toCharArray() : null);
+      }
+
+      SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
+      sslContext.init( keyManagerFactory != null ? keyManagerFactory.getKeyManagers() : null, trustManagerFactory != null ? trustManagerFactory.getTrustManagers() : null, null);
+
+      X509TrustManager trustManager = trustManagerFactory != null ? (X509TrustManager) trustManagerFactory.getTrustManagers()[0] : null;
+
+      if( DEBUG )
+      {
+        X509Certificate[] acceptedIssuers = trustManager.getAcceptedIssuers();
+        for (X509Certificate acceptedIssuer : acceptedIssuers)
         {
-            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-
-            trusKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-            trusKeyStore.load(null, null);
-
-            // CA
-            InputStream is = new ByteArrayInputStream( ca.getBytes( Charset.forName("UTF-8") ) );
-            Certificate cert = certificateFactory.generateCertificate(is);
-            trusKeyStore.setCertificateEntry("alex-ca", cert);
-
-        } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
-            throw new RuntimeException(e);
+          Log.e("ALEX", "installed cert details subject: " + acceptedIssuer.getSubjectX500Principal() + " issuer: " + acceptedIssuer.getIssuerX500Principal());
         }
+      }
 
-        return trusKeyStore;
-    }
-
-    private KeyStore getKeyKeystore( String pfx, String passphrase )
-    {
-        KeyStore keyKeyStore = null;
-
-        try
+      HostnameVerifier hostnameVerifier = new HostnameVerifier() {
+        @Override
+        public boolean verify(String hostname, SSLSession session)
         {
-            byte[] data = Base64.decode( pfx, Base64.DEFAULT );
+          if( DEBUG ) Log.e("ALEX", "Verifying host: " + hostname );
 
-            InputStream is = new ByteArrayInputStream( data );
-
-            keyKeyStore = KeyStore.getInstance("PKCS12");
-            keyKeyStore.load(is, passphrase != null ? passphrase.toCharArray() : null);
-
-        } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
-            throw new RuntimeException(e);
+          return true;
         }
+      };
 
-        return keyKeyStore;
+      return new OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .writeTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(0, TimeUnit.MINUTES)
+        .sslSocketFactory(sslContext.getSocketFactory(), trustManager)
+        .hostnameVerifier(hostnameVerifier)
+        .build();
+
+    } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException | UnrecoverableKeyException e) {
+      throw new RuntimeException(e);
     }
+  }
 
-    private OkHttpClient getClient( String ca, String pfx, String passphrase )
-    {
-        try
-        {
-            if( DEBUG ) Log.e("ALEX", "TMF default alg: " + TrustManagerFactory.getDefaultAlgorithm() );
-            if( DEBUG ) Log.e("ALEX", "KMF default alg: " + KeyManagerFactory.getDefaultAlgorithm() );
+  private void listAvailableSSLProtocols()
+  {
+    SSLParameters sslParameters;
+    try {
+      sslParameters = SSLContext.getDefault().getDefaultSSLParameters();
 
-            TrustManagerFactory trustManagerFactory = null;
-            KeyManagerFactory keyManagerFactory = null;
+      // SSLv3, TLSv1, TLSv1.1, TLSv1.2 etc.
+      if(DEBUG) Log.e("ALEX", Arrays.toString(sslParameters.getProtocols()));
 
-            if( ca != null )
-            {
-              trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-              trustManagerFactory.init(getTrusKeystore(ca));
-            }
-
-            if( pfx != null )
-            {
-              keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-              keyManagerFactory.init(getKeyKeystore(pfx, passphrase), passphrase != null ? passphrase.toCharArray() : null);
-            }
-
-            SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
-            sslContext.init( keyManagerFactory != null ? keyManagerFactory.getKeyManagers() : null, trustManagerFactory != null ? trustManagerFactory.getTrustManagers() : null, null);
-
-            X509TrustManager trustManager = trustManagerFactory != null ? (X509TrustManager) trustManagerFactory.getTrustManagers()[0] : null;
-			
-            if( DEBUG )
-            {
-              X509Certificate[] acceptedIssuers = trustManager.getAcceptedIssuers();
-              for (X509Certificate acceptedIssuer : acceptedIssuers)
-              {
-                Log.e("ALEX", "installed cert details subject: " + acceptedIssuer.getSubjectX500Principal() + " issuer: " + acceptedIssuer.getIssuerX500Principal());
-                }
-            }
-
-            HostnameVerifier hostnameVerifier = new HostnameVerifier() {
-                @Override
-                public boolean verify(String hostname, SSLSession session)
-                {
-                  if( DEBUG ) Log.e("ALEX", "Verifying host: " + hostname );
-
-                  return true;
-                }
-            };
-
-            return new OkHttpClient.Builder()
-                    .connectTimeout(10, TimeUnit.SECONDS)
-                    .writeTimeout(10, TimeUnit.SECONDS)
-                    .readTimeout(0, TimeUnit.MINUTES)
-                    .sslSocketFactory(sslContext.getSocketFactory(), trustManager)
-                    .hostnameVerifier(hostnameVerifier)
-                    .build();
-
-        } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException | UnrecoverableKeyException e) {
-            throw new RuntimeException(e);
-        }
+    } catch (NoSuchAlgorithmException e) {
+      // ...
     }
-
-    private void listAvailableSSLProtocols()
-    {
-        SSLParameters sslParameters;
-        try {
-            sslParameters = SSLContext.getDefault().getDefaultSSLParameters();
-
-            // SSLv3, TLSv1, TLSv1.1, TLSv1.2 etc.
-            if(DEBUG) Log.e("ALEX", Arrays.toString(sslParameters.getProtocols()));
-
-        } catch (NoSuchAlgorithmException e) {
-            // ...
-        }
-    }
+  }
 
   @Override
   public void connect(
@@ -234,43 +230,41 @@ public final class WebSocketModule extends NativeWebSocketModuleSpec {
       @Nullable final ReadableMap options,
       final double socketID) {
     final int id = (int) socketID;
-      OkHttpClient client = null;
+    OkHttpClient client = null;
 
-      if( options == null ||
-          ( !options.hasKey("ca") && !options.hasKey("pfx") ) ||
-          ( options.getString("ca").isEmpty() && options.getString("pfx").isEmpty() )
-      )
-      {
-          if(DEBUG) {
-              Log.e("ALEX", "standard socket:  " + url);
-          }
-
-          client = new OkHttpClient.Builder()
-                  .connectTimeout(10, TimeUnit.SECONDS)
-                  .writeTimeout(10, TimeUnit.SECONDS)
-                  .readTimeout(0, TimeUnit.MINUTES) // Disable timeouts for read
-                  .build();
+    if( options == null ||
+      ( !options.hasKey("ca") && !options.hasKey("pfx") ) ||
+      ( options.getString("ca").isEmpty() && options.getString("pfx").isEmpty() )
+    )
+    {
+      if(DEBUG) {
+        Log.e("ALEX", "standard socket:  " + url);
       }
-      else
+
+      client = new OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .writeTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(0, TimeUnit.MINUTES) // Disable timeouts for read
+        .build();
+    }
+    else
+    {
+      String ca = options.hasKey("ca") && !options.getString("ca").isEmpty() ? options.getString("ca") : null;
+      String pfx = options.hasKey("pfx") && !options.getString("pfx").isEmpty() ? options.getString("pfx") : null;
+      String passphrase = options.hasKey("passphrase") && !options.getString("passphrase").isEmpty() ? options.getString("passphrase") : null;
+
+      if(DEBUG)
       {
-          String ca = options.hasKey("ca") ? options.getString("ca") : null;
-          String pfx = options.hasKey("pfx") ? options.getString("pfx") : null;
-          String passphrase = options.hasKey("passphrase") ? options.getString("passphrase") : null;
+        listAvailableSSLProtocols();
 
-          if(DEBUG)
-          {
-              listAvailableSSLProtocols();
-
-              Log.e("ALEX", "url: " + url);
-              Log.e("ALEX", "ca: " + ( ca != null ? ca : "" ));
-              Log.e("ALEX", "pfx: " + ( pfx != null ? pfx : "" ));
-              Log.e("ALEX", "passphrase: " + ( passphrase != null ? passphrase : "" ));
-          }
-
-          client = getClient( ca, pfx, passphrase );
+        Log.e("ALEX", "url: " + url);
+        Log.e("ALEX", "ca: " + ( ca != null ? ca : "" ));
+        Log.e("ALEX", "pfx: " + ( pfx != null ? pfx : "" ));
+        Log.e("ALEX", "passphrase: " + ( passphrase != null ? passphrase : "" ));
       }
-      //endregion
 
+      client = getClient( ca, pfx, passphrase );
+    }
 
     Request.Builder builder = new Request.Builder().tag(id).url(url);
 
