@@ -2,7 +2,8 @@
 Every project what i created has problem with securing websockets.\
 So, I decide to share my codes with everyone, and i hope this will be merged into react native one day.\
 This library allows you to set wss address in WebSocket with ca (plain cert), pfx (base64) and passphrase.\
-<a href="https://www.buymeacoffee.com/Lipo11" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" style="height: 51px !important;width: 217px !important;" ></a>
+Small coffe makes me happy :)\
+<a href="https://www.buymeacoffee.com/Lipo11" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" style="height: 32px !important;width: 136px !important;" ></a>
 
 ### Installing
 Install the react-native-wss repository & yauzl library to devDependencies
