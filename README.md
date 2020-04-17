@@ -35,7 +35,7 @@ this._ws = new WebSocket( 'wss://192.168.0.1', [],
 ```
 
 ### Postinstall error patch not found!
-I compile only latest version of react native. ( Because of repo size )
-When you need older version of react native you need to compile android .aar manualy.
-[How compile android aar.](ANDROID.md)
+I compile only latest version of react native. ( Because of repo size )\
+When you need older version of react native you need to compile android .aar manualy.\
+[HOW TO COMPILE ANDROID AAR.](ANDROID.md)\
 Do you need help? You should create issue and I can help you :)
