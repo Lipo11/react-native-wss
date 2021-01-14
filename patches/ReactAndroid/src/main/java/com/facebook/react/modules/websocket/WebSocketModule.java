@@ -192,7 +192,9 @@ public final class WebSocketModule extends NativeWebSocketModuleSpec {
         {
           if( DEBUG ) Log.e("ALEX", "Verifying host: " + hostname );
 
-          return true;
+          Boolean verified = session.isValid();
+
+          return verified;
         }
       };
 
