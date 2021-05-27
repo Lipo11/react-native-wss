@@ -177,7 +177,7 @@ public final class WebSocketModule extends NativeWebSocketModuleSpec {
 
       X509TrustManager trustManager = trustManagerFactory != null ? (X509TrustManager) trustManagerFactory.getTrustManagers()[0] : null;
 
-      if( DEBUG )
+      if( DEBUG && trustManager != null )
       {
         X509Certificate[] acceptedIssuers = trustManager.getAcceptedIssuers();
         for (X509Certificate acceptedIssuer : acceptedIssuers)
@@ -198,13 +198,26 @@ public final class WebSocketModule extends NativeWebSocketModuleSpec {
         }
       };
 
-      return new OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .writeTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(0, TimeUnit.MINUTES)
-        .sslSocketFactory(sslContext.getSocketFactory(), trustManager)
-        .hostnameVerifier(hostnameVerifier)
-        .build();
+      if( trustManager != null )
+      {
+        return new OkHttpClient.Builder()
+          .connectTimeout(10, TimeUnit.SECONDS)
+          .writeTimeout(10, TimeUnit.SECONDS)
+          .readTimeout(0, TimeUnit.MINUTES)
+          .sslSocketFactory(sslContext.getSocketFactory(), trustManager)
+          .hostnameVerifier(hostnameVerifier)
+          .build();
+      }
+      else
+      {
+        return new OkHttpClient.Builder()
+          .connectTimeout(10, TimeUnit.SECONDS)
+          .writeTimeout(10, TimeUnit.SECONDS)
+          .readTimeout(0, TimeUnit.MINUTES)
+          .sslSocketFactory(sslContext.getSocketFactory())
+          .hostnameVerifier(hostnameVerifier)
+          .build();
+      }
 
     } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException | UnrecoverableKeyException e) {
       throw new RuntimeException(e);
