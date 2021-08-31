@@ -21,7 +21,7 @@ npm i
 ./gradlew clean
 ./gradlew assembleRelease
 
-# After the react native was builded with success, rename the file
+# After the react native was built with success, rename the file
 # ReactAndroid/build/outputs/aar/ReactAndroid-release.aar
 # to your project react native version ( for example 0.61.5 )
 # ReactAndroid/build/outputs/aar/react-native-0.61.5.aar
@@ -29,7 +29,7 @@ mv nativeReact/ReactAndroid/build/outputs/aar/ReactAndroid-release.aar nativeRea
 
 # and copy it into your project root with path
 # node_modules/react-native-wss/patches/android/com/facebook/react/react-native/0.61.5/react-native-0.61.5.aar
-mkdir -p node_modules/react-native-wss/android/com/facebook/react/react-native/0.61.5/
+mkdir -p node_modules/react-native-wss/patches/android/com/facebook/react/react-native/0.61.5/
 cp nativeReact/ReactAndroid/build/outputs/aar/react-native-0.61.5.aar node_modules/react-native-wss/patches/android/com/facebook/react/react-native/0.61.5/
 
 # The last step is zip the folder patches/android/ with name of your react native project version ( for example 0.61.5 )
