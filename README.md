@@ -6,9 +6,9 @@ Small coffe makes me happy :)\
 <a href="https://www.buymeacoffee.com/Lipo11" title="Donate to this project using Buy Me A Coffee"><img src="https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow.svg" alt="Buy Me A Coffee donate button" /></a>
 
 ### Installing
-Install the react-native-wss repository & yauzl library to devDependencies
+Install the react-native-wss repository to devDependencies
 ```sh
-npm i --save-dev react-native-wss yauzl
+npm i --save-dev react-native-wss
 ```
 Add postinstall into project package.json scripts object
 ```js

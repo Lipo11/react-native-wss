@@ -1,96 +1,84 @@
 'use strict';
 
-const patchReactNative = async ( version ) =>
+const path = require('path');
+const fs = require('fs-extra');
+
+async function patchReactNative( version )
 {
-	console.log( 'Patching REACT NATIVE ' + version);
+	console.log( `Patching react-native ${version}`);
 
-	const fs = require('fs');
-	const yauzl = require('yauzl');
+	const patchesDirectory = path.join(__dirname, '../patches');
+	console.log(`Lookup patch in '${patchesDirectory}'`);
 
-	const findPatch = function( version )
+	const patchDirectoryPath = path.join( patchesDirectory, version );
+	const patchExists = await fs.pathExists( patchDirectoryPath );
+	if (!patchExists)
 	{
-		return new Promise( resolve =>
-		{
-			let patch = null;
-			fs.readdirSync( './node_modules/react-native-wss/patches' ).forEach( file =>
-			{
-				if( file === version + '.zip' ){ patch = file; }
-			});
-			resolve( patch );
-		});
-	};
-
-	const unzipFile = function( zip, destination )
-	{
-		return new Promise( ( resolve, reject ) =>
-		{
-			yauzl.open( zip, { lazyEntries: true }, ( err, zipfile ) =>
-			{
-				if ( err ) reject( err );
-
-				zipfile.readEntry();
-
-				zipfile.on( 'entry', ( entry ) =>
-				{
-					let outfile = destination + entry.fileName ;
-
-					// directory entry
-					if( /\/$/.test( entry.fileName ) )
-					{
-						if( ! fs.existsSync( outfile ) )
-						{
-							fs.mkdirSync( outfile );
-						}
-
-						zipfile.readEntry();
-					}
-					// file entry
-					else
-					{
-						zipfile.openReadStream( entry, ( err, readStream ) =>
-						{
-							if ( err ) reject( err );
-
-							readStream.on( 'end', () => { zipfile.readEntry(); } );
-
-							readStream.pipe( fs.createWriteStream( outfile ) );
-						});
-					}
-				});
-
-				zipfile.on( 'end', () => resolve() );
-			});
-		});
-	};
-
-	const applyPatch = function( patchFile )
-	{
-		return new Promise( async ( resolve ) =>
-		{
-			await unzipFile( './node_modules/react-native-wss/patches/node_modules.zip', './node_modules/' );
-			await unzipFile( './node_modules/react-native-wss/patches/' + patchFile, './node_modules/react-native/' );
-
-			resolve();
-		});
-	};
-
-	let patch = await findPatch( version );
-	if( patch )
-	{
-		console.log( ' > found patch ' + patch );
-		await applyPatch( patch );
-		console.log( ' > patching finished' );
-	}
-	else
-	{
-		console.log( ' > patch not found!' );
+		throw new Error( `Patch for react-native ${version} not found` );
 	}
 
+	console.log(`Found patch at '${patchDirectoryPath}'`);
+
+	const reactNativeDirectoryPath = path.join( process.cwd(), 'node_modules', 'react-native' );
+
+	const filterFunction = async ( src, dst ) =>
+	{
+		const stats = await fs.lstat(src);
+		const isFile = stats.isFile();
+		if (isFile)
+		{
+			console.log(`Patching\n\t${src}\n\t-> ${dst}\n\n`);
+		}
+
+		return true;
+	};
+
+	await fs.copy( patchDirectoryPath, reactNativeDirectoryPath, {
+		overwrite: true,
+		recursive: true,
+		filter: filterFunction
+	} );
+
+	console.log(`react-native ${version} patched successfully`);
 	console.log('');
 };
 
-( async () => {
-	const configuration = require( '../../../package.json' );
+async function readParentProjectConfiguration()
+{
+	const configurationFilePath = path.join( process.cwd(), 'package.json' );
 
-	await patchReactNative( configuration.dependencies[ 'react-native' ] );
-})();
+	console.log(`Reading parent package configuration from '${configurationFilePath}'`);
+
+	const configurationFileContent = await fs.readFile(configurationFilePath, 'utf8');
+	const configuration = JSON.parse(configurationFileContent);
+
+	return configuration;
+}
+
+async function main()
+{
+	const configuration = await readParentProjectConfiguration();
+	const reactVersionString = configuration.dependencies[ 'react-native' ];
+	if (!reactVersionString)
+	{
+		throw new Error('react-native not found in project dependencies');
+	}
+
+	console.log(`react-native version string: ${reactVersionString}`);
+
+	// https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+	const semverRegEx = /^[\^~]?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
+	const matches = reactVersionString.match( semverRegEx );
+	if (!matches)
+	{
+		throw new Error('react-native version string does not match semantic versioning');
+	}
+
+	const reactVersion = `${matches[1]}.${matches[2]}.${matches[3]}`;
+
+	console.log(`react-native parsed version: ${reactVersion}`);
+
+	await patchReactNative( reactVersion );
+}
+
+main();

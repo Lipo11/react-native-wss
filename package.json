@@ -26,5 +26,8 @@
   "bugs": {
     "url": "https://github.com/Lipo11/react-native-wss/issues"
   },
-  "homepage": "https://github.com/Lipo11/react-native-wss#readme"
+  "homepage": "https://github.com/Lipo11/react-native-wss#readme",
+  "dependencies": {
+    "fs-extra": "^10.1.0"
+  }
 }
