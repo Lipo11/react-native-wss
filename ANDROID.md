@@ -36,3 +36,105 @@ cp nativeReact/ReactAndroid/build/outputs/aar/react-native-0.61.5.aar node_modul
 cd node_modules/react-native-wss/patches/
 zip -r -X 0.61.5.zip android
 ```
+
+## react-native 0.64.4
+
+Clone react-native repository and checkout 
+
+```sh
+git clone https://github.com/facebook/react-native
+cd react-native
+git checkout v0.64.4
+```
+
+### Disable docuemntation generation
+
+Disable task `androidJavadoc` in `ReactAndroid/release.gradle`
+
+```diff
+- task androidJavadoc(type: Javadoc, dependsOn: generateReleaseBuildConfig) {
+-    source = android.sourceSets.main.java.srcDirs
+-    classpath += files(android.bootClasspath)
+-    classpath += files(project.getConfigurations().getByName("compile").asList())
+-    classpath += files("$buildDir/generated/source/buildConfig/release")
+-    include("**/*.java")
+-}
++ // task androidJavadoc(type: Javadoc, dependsOn: generateReleaseBuildConfig) {
++ //    source = android.sourceSets.main.java.srcDirs
++ //    classpath += files(android.bootClasspath)
++ //    classpath += files(project.getConfigurations().getByName("compile").asList())
++ //    classpath += files("$buildDir/generated/source/buildConfig/release")
++ //    include("**/*.java")
++ // }
+```
+
+also disable task `androidJavadocJar` in `ReactAndroid/release.gradle`
+
+```diff
+- task androidJavadocJar(type: Jar, dependsOn: androidJavadoc) {
+-     classifier = "javadoc"
+-     from(androidJavadoc.destinationDir)
+- }
++ // task androidJavadocJar(type: Jar, dependsOn: androidJavadoc) {
++ //     classifier = "javadoc"
++ //     from(androidJavadoc.destinationDir)
++ // }
+```
+
+Remove docs `androidJavadocJar` artifact
+
+```diff
+    artifacts {
+-        archives(androidSourcesJar)
++        // archives(androidJavadocJar)
+    }
+```
+
+### Fix Folly compile time error
+
+Add following definition to `ReactAndroid/build.gradle`
+
+```diff
++ def follyReplaceContent = '''
++   ssize_t r;
++   do {
++     r = open(name, flags, mode);
++   } while (r == -1 && errno == EINTR);
++   return r;
++ '''
+```
+
+Update `prepareFolly` task in `ReactAndroid/build.gradle`
+
+```diff
+task prepareFolly(dependsOn: dependenciesPath ? [] : [downloadFolly], type: Copy) {
+    from(dependenciesPath ?: tarTree(downloadFolly.dest))
+    from("src/main/jni/third-party/folly/Android.mk")
+    include("folly-${FOLLY_VERSION}/folly/**/*", "Android.mk")
+    eachFile { fname -> fname.path = (fname.path - "folly-${FOLLY_VERSION}/") }
++    // Fixes problem with Folly failing to build on certain systems. See
++    // https://github.com/facebook/react-native/issues/28298
++    filter { line -> line.replaceAll('return int\\(wrapNoInt\\(open, name, flags, mode\\)\\);', follyReplaceContent) }
+    includeEmptyDirs = false
+    into("$thirdPartyNdkDir/folly")
+}
+```
+
+Build android artifacts using docker (https://github.com/facebook/react-native/issues/30271#issuecomment-851347219) running following command within `react-native` directory
+
+```sh
+docker run \
+    --rm \
+    --name rn-build \
+    -v $PWD:/pwd \
+    -w /pwd \
+    reactnativecommunity/react-native-android:6.1 \
+    /bin/sh -c "./gradlew installArchives --no-daemon"
+```
+
+Rename resulting AAR file in build directory
+
+```sh
+cd ReactAndroid/build/outputs/aar/
+cp ReactAndroid-release.aar react-native-0.64.4.aar
+```
