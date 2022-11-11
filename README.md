@@ -1,9 +1,14 @@
-# React native WebSocket Secure ( 0.64.1 )
+# React native WebSocket Secure
 Every project what i created has problem with securing websockets.\
 So, I decide to share my codes with everyone, and i hope this will be merged into react native one day.\
 This library allows you to set wss address in WebSocket with ca (plain cert), pfx (base64) and passphrase.\
 Small coffe makes me happy :)\
 <a href="https://www.buymeacoffee.com/Lipo11" title="Donate to this project using Buy Me A Coffee"><img src="https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow.svg" alt="Buy Me A Coffee donate button" /></a>
+
+## Supported react-native versions
+
+* v0.64.4
+* v0.64.1
 
 ### Installing
 Install the react-native-wss repository to devDependencies
