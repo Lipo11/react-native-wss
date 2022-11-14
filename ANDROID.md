@@ -1,5 +1,15 @@
-### Compile android native code with wss support
-#### This step can be skipped ( I compile the newest react native version with WSS into patches/ )
+# Compile android native code with wss support
+
+There are two ways of how to build react-native for android so far. Choose one that fits you best.
+
+1. [Compilation with preinstalled prerequisities](#compilation-with-preinstalled-prerequisities)
+2. [Compilation using docker](#compilation-using-docker)
+
+## Compilation with preinstalled prerequisities
+
+Follow these instructions when building on machine with all android build tools preinstalled and environment setup for building react-native for android OS.
+
+### This step can be skipped ( I compile the newest react native version with WSS into patches/ )
 ```sh
 #Clone repository from github.
 git clone https://github.com/facebook/react-native.git
@@ -37,9 +47,21 @@ cd node_modules/react-native-wss/patches/
 zip -r -X 0.61.5.zip android
 ```
 
-## react-native 0.64.4
+## Compilation using docker
 
-Clone react-native repository and checkout 
+This alternative of building react-native is usefull when building in CI or on computer without all build tools preinstalled.
+
+> NOTE:
+>
+> Docker image with android build tools is pretty fat so take this into account when using it. Once extracted is costs you about 13 gigs of disk space.
+
+### Clone react-native
+
+Clone react-native repository and checkout tag with requested version
+
+> NOTE:
+>
+> In time of writing this documentation version 0.64.4 were used
 
 ```sh
 git clone https://github.com/facebook/react-native
