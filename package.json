@@ -1,6 +1,6 @@
 {
   "name": "react-native-wss",
-  "version": "1.0.14",
+  "version": "1.1.0",
   "description": "React native WebSocket Secure",
   "main": "README.md",
   "scripts": {
@@ -26,5 +26,8 @@
   "bugs": {
     "url": "https://github.com/Lipo11/react-native-wss/issues"
   },
-  "homepage": "https://github.com/Lipo11/react-native-wss#readme"
+  "homepage": "https://github.com/Lipo11/react-native-wss#readme",
+  "dependencies": {
+    "fs-extra": "^10.1.0"
+  }
 }
